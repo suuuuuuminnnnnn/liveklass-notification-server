@@ -2,6 +2,7 @@ package com.liveklass.notification.service
 
 import com.liveklass.notification.dto.CreateNotificationRequest
 import com.liveklass.notification.entity.Notification
+import com.liveklass.notification.enums.NotificationStatus
 import com.liveklass.notification.enums.ReadStatus
 import com.liveklass.notification.exception.ErrorCode
 import com.liveklass.notification.exception.GlobalException
@@ -79,6 +80,16 @@ class NotificationService(
             throw GlobalException(ErrorCode.FORBIDDEN_NOTIFICATION_ACCESS, "알림에 접근할 수 없습니다. id=$notificationId")
         n.markAsRead(LocalDateTime.now())
         notificationRepository.save(n)
+    }
+
+    @Transactional
+    fun manualRetry(notificationId: Long): Notification {
+        val n = notificationRepository.findById(notificationId)
+            .orElseThrow { GlobalException(ErrorCode.NOTIFICATION_NOT_FOUND, "알림을 찾을 수 없습니다. id=$notificationId") }
+        if (n.status != NotificationStatus.FAILED)
+            throw GlobalException(ErrorCode.INVALID_NOTIFICATION_STATE, "수동 재시도는 FAILED 상태에서만 가능합니다. current=${n.status}")
+        n.prepareManualRetry(LocalDateTime.now())
+        return notificationRepository.save(n)
     }
 
     private fun buildDeduplicationKey(r: CreateNotificationRequest): String =

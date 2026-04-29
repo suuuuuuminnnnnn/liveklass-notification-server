@@ -34,4 +34,10 @@ class NotificationController(
         notificationService.markAsRead(notificationId, userId)
         return ResponseEntity.ok().build()
     }
+
+    @PostMapping("/{notificationId}/retry")
+    fun retry(@PathVariable notificationId: Long): ResponseEntity<CreateNotificationResponse> {
+        val n = notificationService.manualRetry(notificationId)
+        return ResponseEntity.ok(CreateNotificationResponse(n.id, n.status, false))
+    }
 }
