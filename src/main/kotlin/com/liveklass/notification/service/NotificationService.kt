@@ -16,6 +16,7 @@ class NotificationService(
     private val notificationRepository: NotificationRepository,
     private val notificationTemplateRepository: NotificationTemplateRepository,
     private val notificationSaveTransactionHelper: NotificationSaveTransactionHelper,
+    private val templateRenderer: TemplateRenderer,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -32,8 +33,8 @@ class NotificationService(
             .findByNotificationTypeAndChannelAndEnabledTrue(request.type, request.channel)
             ?: throw GlobalException(ErrorCode.TEMPLATE_NOT_FOUND, "활성 템플릿을 찾을 수 없습니다. type=${request.type}, channel=${request.channel}")
 
-        val title = renderTemplate(template.titleTemplate, request.templateVariables)
-        val content = renderTemplate(template.contentTemplate, request.templateVariables)
+        val title = templateRenderer.render(template.titleTemplate, request.templateVariables)
+        val content = templateRenderer.render(template.contentTemplate, request.templateVariables)
 
         val now = LocalDateTime.now()
         val notification = Notification(
@@ -56,12 +57,6 @@ class NotificationService(
             val existing = notificationRepository.findByDeduplicationKey(key)!!
             CreateResult(existing, duplicated = true)
         }
-    }
-
-    private fun renderTemplate(template: String, variables: Map<String, String>): String {
-        var result = template
-        variables.forEach { (k, v) -> result = result.replace("{$k}", v) }
-        return result
     }
 
     private fun buildDeduplicationKey(r: CreateNotificationRequest): String =
