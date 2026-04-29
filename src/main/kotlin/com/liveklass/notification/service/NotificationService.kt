@@ -2,6 +2,7 @@ package com.liveklass.notification.service
 
 import com.liveklass.notification.dto.CreateNotificationRequest
 import com.liveklass.notification.entity.Notification
+import com.liveklass.notification.enums.ReadStatus
 import com.liveklass.notification.exception.ErrorCode
 import com.liveklass.notification.exception.GlobalException
 import com.liveklass.notification.repository.NotificationRepository
@@ -9,6 +10,7 @@ import com.liveklass.notification.repository.NotificationTemplateRepository
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
@@ -57,6 +59,26 @@ class NotificationService(
             val existing = notificationRepository.findByDeduplicationKey(key)!!
             CreateResult(existing, duplicated = true)
         }
+    }
+
+    fun getNotification(id: Long): Notification =
+        notificationRepository.findById(id)
+            .orElseThrow { GlobalException(ErrorCode.NOTIFICATION_NOT_FOUND, "알림을 찾을 수 없습니다. id=$id") }
+
+    fun getUserNotifications(recipientId: Long, readStatus: ReadStatus?): List<Notification> =
+        if (readStatus != null)
+            notificationRepository.findByRecipientIdAndReadStatusOrderByCreatedAtDesc(recipientId, readStatus)
+        else
+            notificationRepository.findByRecipientIdOrderByCreatedAtDesc(recipientId)
+
+    @Transactional
+    fun markAsRead(notificationId: Long, userId: Long) {
+        val n = notificationRepository.findById(notificationId)
+            .orElseThrow { GlobalException(ErrorCode.NOTIFICATION_NOT_FOUND, "알림을 찾을 수 없습니다. id=$notificationId") }
+        if (n.recipientId != userId)
+            throw GlobalException(ErrorCode.FORBIDDEN_NOTIFICATION_ACCESS, "알림에 접근할 수 없습니다. id=$notificationId")
+        n.markAsRead(LocalDateTime.now())
+        notificationRepository.save(n)
     }
 
     private fun buildDeduplicationKey(r: CreateNotificationRequest): String =
