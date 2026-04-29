@@ -1,3 +1,23 @@
 spring:
   application:
     name: notification-server
+  datasource:
+    url: jdbc:postgresql://localhost:5432/notification_db
+    username: notification_user
+    password: notification_pass
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+notification:
+  worker:
+    batch-size: 10
+    stuck-threshold-minutes: 5
