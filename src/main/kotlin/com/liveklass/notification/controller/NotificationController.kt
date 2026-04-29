@@ -1,0 +1,23 @@
+package com.liveklass.notification.controller
+
+import com.liveklass.notification.dto.CreateNotificationRequest
+import com.liveklass.notification.dto.CreateNotificationResponse
+import com.liveklass.notification.service.NotificationService
+import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
+
+@RestController
+@RequestMapping("/api/notifications")
+class NotificationController(
+    private val notificationService: NotificationService,
+) {
+    @PostMapping
+    fun create(@Valid @RequestBody request: CreateNotificationRequest): ResponseEntity<CreateNotificationResponse> {
+        val result = notificationService.createOrGetNotification(request)
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(
+            CreateNotificationResponse(result.notification.id, result.notification.status, result.duplicated)
+        )
+    }
+}
