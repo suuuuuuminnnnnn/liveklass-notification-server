@@ -87,6 +87,7 @@ class Notification(
         status = NotificationStatus.SENT
         sentAt = now
         failureReason = null
+        failedAt = null
         lockedBy = null
         lockedAt = null
         updatedAt = now
@@ -108,6 +109,7 @@ class Notification(
     }
 
     fun recoverFromStuck(now: LocalDateTime) {
+        retryCount++
         lockedBy = null
         lockedAt = null
         updatedAt = now
@@ -117,7 +119,7 @@ class Notification(
             failureReason = "Processing timeout: max retries exceeded"
         } else {
             status = NotificationStatus.READY
-            nextRetryAt = now
+            nextRetryAt = calculateNextRetryAt(retryCount, now)
             failureReason = "Processing timeout: recovered from stuck state"
         }
     }
